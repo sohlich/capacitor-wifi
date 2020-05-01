@@ -79,10 +79,11 @@ public class WifiService {
             String ssid = call.getString("ssid");
             String password =  call.getString("password");
 
-            String connectedSSID = this.getWifiServiceInfo(call);
+            //don't read connected ssid, if not connected will throw error
+            //String connectedSSID = this.getWifiServiceInfo(call);
             //this.forceWifiUsageQ(false, null, null);
 
-            if (!ssid.equals(connectedSSID)) {
+            //if (!ssid.equals(connectedSSID)) {
 
                 WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
                 builder.setSsid(ssid);
@@ -98,9 +99,9 @@ public class WifiService {
                 networkRequestBuilder.setNetworkSpecifier(wifiNetworkSpecifier);
                 NetworkRequest networkRequest = networkRequestBuilder.build();
                 this.forceWifiUsageQ(true, networkRequest);
-            } else {
-                this.getConnectedSSID(call);
-            }
+            //} else {
+            //    this.getConnectedSSID(call);
+            //}
         }
 
     }
