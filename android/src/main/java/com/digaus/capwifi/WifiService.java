@@ -85,20 +85,21 @@ public class WifiService {
 
             //if (!ssid.equals(connectedSSID)) {
 
-                WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
-                builder.setSsid(ssid);
-                if (password != null && password.length() > 0) {
-                    builder.setWpa2Passphrase(password);
-                }
+            WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
+            builder.setSsid(ssid);
+            if (password != null && password.length() > 0) {
+                builder.setWpa2Passphrase(password);
+            }
 
-                WifiNetworkSpecifier wifiNetworkSpecifier = builder.build();
-                NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder();
-                networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-                networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED);
-                networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED);
-                networkRequestBuilder.setNetworkSpecifier(wifiNetworkSpecifier);
-                NetworkRequest networkRequest = networkRequestBuilder.build();
-                this.forceWifiUsageQ(true, networkRequest);
+            WifiNetworkSpecifier wifiNetworkSpecifier = builder.build();
+            NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder();
+            networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+            networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED);
+            networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED);
+            networkRequestBuilder.removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+            networkRequestBuilder.setNetworkSpecifier(wifiNetworkSpecifier);
+            NetworkRequest networkRequest = networkRequestBuilder.build();
+            this.forceWifiUsageQ(true, networkRequest);
             //} else {
             //    this.getConnectedSSID(call);
             //}
@@ -743,6 +744,19 @@ public class WifiService {
         } else {
             return "NONE";
         }
+    }
+
+    public void disconnect(PluginCall call) {
+        String ssid = "\"" + call.getString("ssid") + "\"";
+        String authType = call.getString("authType");
+        if (API_VERSION < 29) {
+            this.forceWifiUsage(false);
+            int netId = this.ssidToNetworkId(ssid, authType);
+            wifiManager.removeNetwork(netId);
+        } else {
+            this.forceWifiUsageQ(false, null);
+        }
+        call.success();
     }
 
 }
