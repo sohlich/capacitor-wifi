@@ -106,6 +106,7 @@ public class Wifi: CAPPlugin {
                         ])
                     }
                     else {
+                        debugPrint(error.debugDescription)
                         call.error("CONNECTION_FAILED")
                     }
                 }
@@ -115,6 +116,21 @@ public class Wifi: CAPPlugin {
                     ])
                 }
             }
+        } else {
+            call.error("ONLY_SUPPORTED_IOS_11")
+        }
+    }
+    @objc func disconnect(_ call: CAPPluginCall) {
+        guard let ssid = call.options["ssid"] as? String else {
+            call.reject("Must provide an ssid")
+            return
+        }
+
+        if #available(iOS 11, *) {
+            NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
+            call.success([
+                "ssid": ssid
+            ])
         } else {
             call.error("ONLY_SUPPORTED_IOS_11")
         }
