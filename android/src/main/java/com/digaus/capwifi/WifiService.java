@@ -48,6 +48,7 @@ public class WifiService {
 
 	WifiManager wifiManager;
 	ConnectivityManager connectivityManager;
+	WifiManager.WifiLock mWifiLock;
 	Context context;
 
 	Bridge bridge;
@@ -57,6 +58,7 @@ public class WifiService {
 		this.wifiManager = (WifiManager) this.bridge.getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 		this.connectivityManager = (ConnectivityManager) this.bridge.getActivity().getApplicationContext().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 		this.context = this.bridge.getContext();
+		mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "wifiLock");
 	}
 
 	public void connect(PluginCall call) {
@@ -591,6 +593,8 @@ public class WifiService {
 				if (networkRequest == null) {
 					networkRequest = new NetworkRequest.Builder()
 							.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+							.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+							.addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED)
 							.removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
 							.build();
 				}
@@ -604,7 +608,11 @@ public class WifiService {
 						if (call != null) {
 							String ssid = call.getString("ssid");
 							if (currentSSID != null && (call.getMethodName().equals("connectPrefix") && currentSSID.startsWith(ssid) || call.getMethodName().equals("connect") && currentSSID.equals(ssid))) {
-								WifiService.this.getConnectedSSID(WifiService.this.savedCall);
+								if (!mWifiLock.isHeld())
+									mWifiLock.acquire();
+								JSObject result = new JSObject();
+								result.put("ssid", currentSSID);
+								call.success(result);
 							} else {
 								call.error("CONNECTED_SSID_DOES_NOT_MATCH_REQUESTED_SSID");
 							}
@@ -614,6 +622,7 @@ public class WifiService {
 
 					@Override
 					public void onUnavailable() {
+						manager.unregisterNetworkCallback(this);
 						PluginCall call = WifiService.this.savedCall;
 						if (call != null) {
 							call.error("CONNECTION_FAILED");
@@ -647,6 +656,8 @@ public class WifiService {
 					this.networkCallback = null;
 				}
 				manager.bindProcessToNetwork(null);
+				if (mWifiLock.isHeld())
+					mWifiLock.release();
 			}
 		}
 	}
