@@ -616,6 +616,7 @@ public class WifiService {
 							} else {
 								call.error("CONNECTED_SSID_DOES_NOT_MATCH_REQUESTED_SSID");
 							}
+							WifiService.this.savedCall = null;
 							WifiService.this.networkCallback = this;
 						}
 					}
@@ -627,6 +628,7 @@ public class WifiService {
 						if (call != null) {
 							call.error("CONNECTION_FAILED");
 						}
+						WifiService.this.savedCall = null;
 					}
 				});
 
