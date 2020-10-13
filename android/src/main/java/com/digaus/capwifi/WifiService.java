@@ -144,6 +144,7 @@ public class WifiService {
 				networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
 				networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED);
 				networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED);
+				networkRequestBuilder.removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
 				networkRequestBuilder.setNetworkSpecifier(wifiNetworkSpecifier);
 				NetworkRequest networkRequest = networkRequestBuilder.build();
 				this.forceWifiUsageQ(true, networkRequest);
@@ -599,23 +600,28 @@ public class WifiService {
 							.build();
 				}
 
+				if (this.networkCallback != null) {
+					manager.unregisterNetworkCallback(this.networkCallback);
+					this.networkCallback = null;
+				}
+
 				manager.requestNetwork(networkRequest, new ConnectivityManager.NetworkCallback() {
 					@Override
 					public void onAvailable(Network network) {
 						manager.bindProcessToNetwork(network);
-						String currentSSID = WifiService.this.getWifiServiceInfo(null);
+						// String currentSSID = WifiService.this.getWifiServiceInfo(null);
 						PluginCall call = WifiService.this.savedCall;
 						if (call != null) {
 							String ssid = call.getString("ssid");
-							if (currentSSID != null && (call.getMethodName().equals("connectPrefix") && currentSSID.startsWith(ssid) || call.getMethodName().equals("connect") && currentSSID.equals(ssid))) {
-								if (!mWifiLock.isHeld())
-									mWifiLock.acquire();
-								JSObject result = new JSObject();
-								result.put("ssid", currentSSID);
-								call.success(result);
-							} else {
-								call.error("CONNECTED_SSID_DOES_NOT_MATCH_REQUESTED_SSID");
-							}
+							// if (currentSSID != null && (call.getMethodName().equals("connectPrefix") && currentSSID.startsWith(ssid) || call.getMethodName().equals("connect") && currentSSID.equals(ssid))) {
+							if (!mWifiLock.isHeld())
+								mWifiLock.acquire();
+							JSObject result = new JSObject();
+							result.put("ssid", ssid);
+							call.success(result);
+							// } else {
+							// 	call.error("CONNECTED_SSID_DOES_NOT_MATCH_REQUESTED_SSID");
+							// }
 							WifiService.this.savedCall = null;
 							WifiService.this.networkCallback = this;
 						}
@@ -623,7 +629,9 @@ public class WifiService {
 
 					@Override
 					public void onUnavailable() {
+						Log.e("onUnavailable", "onUnavailable");
 						manager.unregisterNetworkCallback(this);
+						WifiService.this.networkCallback = null;
 						PluginCall call = WifiService.this.savedCall;
 						if (call != null) {
 							call.error("CONNECTION_FAILED");
